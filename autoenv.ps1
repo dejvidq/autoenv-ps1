@@ -2,6 +2,14 @@ $ConfigPath = Join-Path -Path $HOME -ChildPath "autoenv"
 $ConfigFile = Join-Path -Path $ConfigPath -ChildPath "autoenv.json"
 
 function ConfigSetup() {
+	<#
+        .SYNOPSIS
+        Setup autoenv configs
+        .DESCRIPTION
+        Setup autoenv configs. Create folder and config file if needed
+        .EXAMPLE
+        PS> ConfigSetup
+    #>
     if (-not (Test-Path -Path $ConfigPath)) {
         New-Item $ConfigPath -ItemType directory | Out-Null
     }
@@ -11,16 +19,50 @@ function ConfigSetup() {
 }
 
 function ReadConfig() {
+	<#
+        .SYNOPSIS
+        Read autoenv config file.
+        .DESCRIPTION
+        Read autoenv config file and return its content as hashtable
+		.OUTPUTS
+        System.Collections.Hashtable. ReadConfig returns a hashtable with the config content.
+        .EXAMPLE
+        PS> $Config = ReadConfig
+        .EXAMPLE
+        PS> ReadConfig
+		
+        Name                           Value
+        ----                           -----
+        C:\Projects\MyProject1         myEnv1
+        C:\Projects\MyProject2         myEnv2
+        C:\Projects\MyProject3         myEnv1
+    #>
     $hashtable = Get-Content -Path $ConfigFile | ConvertFrom-Json -AsHashtable
     return $hashtable
 }
 
 function WriteConfig() {
+	<#
+        .SYNOPSIS
+        Write config object to config file
+        .DESCRIPTION
+        Write config object content to the config file. Takes hastable with config content and writes to json config file
+        .PARAMETER ConfigObject
+        Hashtable with config content to write to file
+		.EXAMPLE
+        PS> WriteConfig -ConfigObject $Config
+    #>
     param([hashtable]$ConfigObject)
     $ConfigObject | ConvertTo-Json | Out-File $ConfigFile
 }
 
 function SmartVenvActivate() {
+	<#
+        .SYNOPSIS
+        Auto enable virtualenv in specific paths
+        .DESCRIPTION
+        Function automatically enables specific virtual env when entering specific paths added to config. Can be added to function overriding system Set-Location to work automatically
+    #>
     $VirtualEnvs = ReadConfig
     $venvActivate = $false
     if ($VirtualEnvs.Count -gt 0) {
@@ -118,7 +160,21 @@ function Set-Autoenv() {
     WriteConfig -ConfigObject $CurrentConfig
 }
 
-function Read-AutoenvConfig() {
+function Get-AutoenvConfig() {
+	<#
+        .SYNOPSIS
+        Get autoenv config
+        .DESCRIPTION
+        Get autoenv config content as table.
+        .EXAMPLE
+        PS> Get-AutoenvConfig
+				
+        Location                       Name
+        ----                           -----
+        C:\Projects\MyProject1         myEnv1
+        C:\Projects\MyProject2         myEnv2
+        C:\Projects\MyProject3         myEnv1
+    #>
     $CurrentConfig = ReadConfig
     if ($CurrentConfig.Length -gt 0) {
         $CurrentConfig | Format-Table @{L = "Location"; E = "Name" }, @{L = "Name"; E = "Value" } -AutoSize
@@ -128,6 +184,19 @@ function Read-AutoenvConfig() {
 }
 
 function Get-AllAutoenv() {
+	<#
+        .SYNOPSIS
+        Get all virtualenvs created with autoenv
+        .DESCRIPTION
+        Get all virtualenvs created with autoenv. Returns all virtualenvs, each in new line
+        .EXAMPLE
+        PS> Remove-Autoenv -Name MyEnv1
+        .EXAMPLE
+        PS> Get-AllAutoenv
+		myEnv1
+		myEnv2
+		myEnv3
+    #>
     $CurrentConfig = ReadConfig
     $VirtualEnvs = $CurrentConfig.Values | Select-Object -Unique
     foreach ($venv in $VirtualEnvs) {
@@ -169,6 +238,16 @@ function Remove-Autoenv() {
 }
 
 function Remove-VenvFromConfigByName() {
+	<#
+        .SYNOPSIS
+        Remove existing autoenv from config by its name
+        .DESCRIPTION
+        Remove existing autoenv from config by name. Takes Name parameter and removes all paths from config assigned to that venv.
+        .PARAMETER Name
+        Virtualenv name to remove from config.
+        .EXAMPLE
+        PS> Remove-VenvFromConfigByName -Name MyEnv1
+    #>
     param (
         [Parameter(Mandatory = $true)]
         [string]$Name
@@ -176,7 +255,7 @@ function Remove-VenvFromConfigByName() {
     $Config = ReadConfig
     $PathsWithVirtualEnv = [System.Collections.ArrayList]@()
     foreach ($item in $Config.GetEnumerator()) {
-        if ($($item.Value) -eq $Name) {
+        if ($item.Value -eq $Name) {
             $PathsWithVirtualEnv.Add($item.Key)
         }
     }
@@ -187,6 +266,16 @@ function Remove-VenvFromConfigByName() {
 }
 
 function Remove-VenvFromConfigByLocation() {
+	<#
+        .SYNOPSIS
+        Remove existing autoenv for specific location
+        .DESCRIPTION
+        Remove existing autoenv for specific location. Takes location as parameter and removes virtualenv from auto enabling on that path
+        .PARAMETER Location
+        Location of the path to remove autoenv for. Removes this location from config but virtualenv itself is not removed.
+        .EXAMPLE
+        PS> Remove-VenvFromConfigByLocation -Location C:\Projects\MyProject
+    #>
     param (
         [Parameter(Mandatory = $true)]
         [string]$Location
@@ -204,7 +293,7 @@ function Set-Location() {
 Set-Alias -Name setenv -Value Set-Autoenv
 Set-Alias -Name newenv -Value New-Autoenv
 Set-Alias -Name lsenv -Value Get-AllAutoenv
-Set-Alias -Name lsenvconf -Value Read-AutoenvConfig
+Set-Alias -Name lsenvconf -Value Get-AutoenvConfig
 Set-Alias -Name rmenv -Value Remove-Autoenv
 
 # Run function for config setup on profile loading
