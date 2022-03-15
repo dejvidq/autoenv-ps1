@@ -72,7 +72,11 @@ function SmartVenvActivate() {
                 $currentEnv = $env:VIRTUAL_ENV
                 if (!("$currentEnv" -eq "$(Join-Path -Path $el.Key -ChildPath $el.Value)")) {
                     $absolutePath = Resolve-Path -Path $(Join-Path -Path $ConfigPath -ChildPath $el.Value)
-                    $pathToActivate = Join-Path -Path $absolutePath -ChildPath "Scripts" -AdditionalChildPath "activate.ps1"
+                    if ($PSVersionTable.Platform -eq "Win32NT") {
+                        $pathToActivate = Join-Path -Path $absolutePath -ChildPath "Scripts" -AdditionalChildPath "Activate.ps1"
+                    } else {
+                        $pathToActivate = Join-Path -Path $absolutePath -ChildPath "bin" -AdditionalChildPath "Activate.ps1"
+                    }
                     & "$pathToActivate"
                 }
             }
@@ -124,8 +128,12 @@ function New-Autoenv() {
     }
     $CurrentConfig = ReadConfig
     & $Python -m venv $(Join-Path -Path $ConfigPath -ChildPath $Name)
-    $CurrentConfig += @{
-        $Location = $Name
+    if ($CurrentConfig.Length -eq 0) {
+        $CurrentConfig = @{
+            $Location = $Name
+        }
+    } else {
+        $CurrentConfig[$Location] = $Name
     }
     WriteConfig -ConfigObject $CurrentConfig
 }
@@ -197,9 +205,7 @@ function Get-AllAutoenv() {
 		myEnv2
 		myEnv3
     #>
-    $CurrentConfig = ReadConfig
-    $VirtualEnvs = $CurrentConfig.Values | Select-Object -Unique
-    foreach ($venv in $VirtualEnvs) {
+    foreach ($venv in $(Get-ChildItem -Directory -Name $ConfigPath)) {
         Write-Host "$venv" -ForegroundColor Green
     }
 }
