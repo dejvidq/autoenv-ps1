@@ -198,8 +198,6 @@ function Get-AllAutoenv() {
         .DESCRIPTION
         Get all virtualenvs created with autoenv. Returns all virtualenvs, each in new line
         .EXAMPLE
-        PS> Remove-Autoenv -Name MyEnv1
-        .EXAMPLE
         PS> Get-AllAutoenv
 		myEnv1
 		myEnv2
