@@ -300,5 +300,19 @@ Set-Alias -Name lsenv -Value Get-AllAutoenv
 Set-Alias -Name lsenvconf -Value Get-AutoenvConfig
 Set-Alias -Name rmenv -Value Remove-Autoenv
 
+# Check if "z" is installed and if yes, add this functionality also to it
+if (Get-Module -ListAvailable -Name z) {
+	function z() {
+		z\z "$Args"
+		SmartVenvActivate;
+	}
+
+	function smart_cd() {
+		z\cdX "$Args"
+		SmartVenvActivate;
+	}
+	set-item alias:cd -Value smart_cd
+}
+
 # Run function for config setup on profile loading
 ConfigSetup
